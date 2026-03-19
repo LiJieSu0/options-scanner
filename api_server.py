@@ -11,6 +11,8 @@ import yfinance as yf
 from datetime import datetime, timedelta
 import json
 
+import time
+
 app = Flask(__name__)
 CORS(app)
 
@@ -84,9 +86,10 @@ def get_option_chain(symbol: str, expiration: str = None):
 
 def get_stock_info(symbol: str):
     """Fetch stock info for a given symbol"""
-    try:
-        ticker = yf.Ticker(symbol)
-        # Try to fetch data
+    for attempt in range(3):
+        try:
+            time.sleep(1.5)  # Rate limit delay between requests
+            ticker = yf.Ticker(symbol)
         hist = ticker.history(period="1d")
         if hist.empty:
             # Try alternative method
