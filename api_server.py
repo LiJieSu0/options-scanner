@@ -15,12 +15,12 @@ CORS(app)
 ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "Y30JW23SBXB0C7PE")
 
 
-@app.route("/", methods=["GET"])
+@app.route("/")
 def root():
     return jsonify({"status": "ok", "message": "Options Scanner API running"})
 
 
-@app.route("/api/stock", methods=["GET"])
+@app.route("/api/stock")
 def stock_endpoint():
     symbol = request.args.get("symbol", "").upper()
     
@@ -28,7 +28,6 @@ def stock_endpoint():
         return jsonify({"error": "Symbol is required"}), 400
     
     try:
-        # Get quote
         url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey={ALPHA_VANTAGE_KEY}"
         resp = requests.get(url, timeout=10)
         data = resp.json()
@@ -48,13 +47,11 @@ def stock_endpoint():
             "volume": int(quote.get("06. volume", 0)),
         })
     except Exception as e:
-        print(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/options", methods=["GET"])
+@app.route("/api/options")
 def options_endpoint():
-    # Alpha Vantage doesn't have options in free tier
     symbol = request.args.get("symbol", "").upper()
     return jsonify({
         "calls": [],
@@ -66,7 +63,7 @@ def options_endpoint():
     })
 
 
-@app.route("/api/expirations", methods=["GET"])
+@app.route("/api/expirations")
 def expirations_endpoint():
     return jsonify({"symbol": "", "expirations": []})
 
