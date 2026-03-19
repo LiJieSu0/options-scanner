@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Options Scanner API - Using Alpha Vantage (free, reliable!)
+Options Scanner API
 """
 
 import os
@@ -11,64 +11,42 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-# Alpha Vantage free API key
-ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "Y30JW23SBXB0C7PE")
+ALPHA_VANTAGE_KEY = "Y30JW23SBXB0C7PE"
 
 
 @app.route("/")
 def root():
-    return jsonify({"status": "ok", "message": "Options Scanner API running"})
+    return jsonify({"status": "ok"})
 
 
 @app.route("/api/stock")
-def stock_endpoint():
-    symbol = request.args.get("symbol", "").upper()
-    
-    if not symbol:
-        return jsonify({"error": "Symbol is required"}), 400
+def stock():
+    s = request.args.get("symbol", "")
+    if not s:
+        return jsonify({"error": "need symbol"}), 400
     
     try:
-        url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey={ALPHA_VANTAGE_KEY}"
-        resp = requests.get(url, timeout=10)
-        data = resp.json()
-        
-        quote = data.get("Global Quote", {})
-        if not quote or not quote.get("05. price"):
-            return jsonify({"error": f"Symbol {symbol} not found. Try AAPL, TSLA, IBM"}), 404
-        
+        r = requests.get(f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={s}&apikey={ALPHA_VANTAGE_KEY}", timeout=10)
+        data = r.json()
+        q = data.get("Global Quote", {})
+        if not q:
+            return jsonify({"error": f"not found: {s}"}), 404
         return jsonify({
-            "symbol": quote.get("01. symbol", symbol),
-            "currentPrice": float(quote.get("05. price", 0)),
-            "change": float(quote.get("09. change", 0)),
-            "changePercent": float(quote.get("10. change percent", "0").replace("%", "")),
-            "previousClose": float(quote.get("08. previous close", 0)),
-            "name": symbol,
-            "marketCap": 0,
-            "volume": int(quote.get("06. volume", 0)),
+            "symbol": q.get("01. symbol", s),
+            "currentPrice": float(q.get("05. price", 0)),
+            "change": float(q.get("09. change", 0)),
+            "changePercent": float(q.get("10. change percent", "0").replace("%", "")),
+            "previousClose": float(q.get("08. previous close", 0)),
+            "volume": int(q.get("06. volume", 0)),
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/options")
-def options_endpoint():
-    symbol = request.args.get("symbol", "").upper()
-    return jsonify({
-        "calls": [],
-        "puts": [],
-        "underlyingPrice": 0,
-        "symbol": symbol,
-        "expirationDates": [],
-        "note": "Options require Alpha Vantage Premium"
-    })
-
-
-@app.route("/api/expirations")
-def expirations_endpoint():
-    return jsonify({"symbol": "", "expirations": []})
+def options():
+    return jsonify({"calls": [], "puts": [], "expirationDates": []})
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    print(f"Starting Options Scanner API on port {port}")
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
