@@ -12,7 +12,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Alpha Vantage free API key
-ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "demo")
+ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "Y30JW23SBXB0C7PE")
 
 
 @app.route("/", methods=["GET"])
