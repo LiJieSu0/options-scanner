@@ -88,30 +88,34 @@ def get_stock_info(symbol: str):
     """Fetch stock info for a given symbol"""
     for attempt in range(3):
         try:
-            time.sleep(1.5)  # Rate limit delay between requests
+            time.sleep(1.5)
             ticker = yf.Ticker(symbol)
-        hist = ticker.history(period="1d")
-        if hist.empty:
-            # Try alternative method
-            info = ticker.info
-            if not info:
-                return {"error": f"Symbol {symbol} not found. Try AAPL, TSLA, NVDA, MSFT"}
-        else:
-            info = ticker.info
-            
-        return {
-            "symbol": symbol.upper(),
-            "currentPrice": info.get("regularMarketPrice", info.get("currentPrice", hist['Close'].iloc[-1] if len(hist) > 0 else 0)),
-            "change": info.get("regularMarketChange", 0),
-            "changePercent": info.get("regularMarketChangePercent", 0),
-            "previousClose": info.get("regularMarketPreviousClose", info.get("previousClose", 0)),
-            "name": info.get("shortName", symbol),
-            "marketCap": info.get("marketCap", 0),
-            "volume": info.get("regularMarketVolume", 0),
-        }
-    except Exception as e:
-        print(f"Error fetching stock info for {symbol}: {e}")
-        return {"error": f"Error: {str(e)}. Try AAPL, TSLA, NVDA, MSFT"}
+            hist = ticker.history(period="1d")
+            if hist.empty:
+                info = ticker.info
+                if not info:
+                    return {"error": f"Symbol {symbol} not found. Try AAPL, TSLA, NVDA, MSFT"}
+            else:
+                info = ticker.info
+                
+            current = hist['Close'].iloc[-1] if len(hist) > 0 else 0
+            return {
+                "symbol": symbol.upper(),
+                "currentPrice": info.get("regularMarketPrice", info.get("currentPrice", current)),
+                "change": info.get("regularMarketChange", 0),
+                "changePercent": info.get("regularMarketChangePercent", 0),
+                "previousClose": info.get("regularMarketPreviousClose", info.get("previousClose", 0)),
+                "name": info.get("shortName", symbol),
+                "marketCap": info.get("marketCap", 0),
+                "volume": info.get("regularMarketVolume", 0),
+            }
+        except Exception as e:
+            if "rate limit" in str(e).lower() and attempt < 2:
+                time.sleep(3)
+                continue
+            print(f"Error fetching stock info for {symbol}: {e}")
+            return {"error": f"Rate limited. Wait a moment then try again."}
+    return {"error": "Rate limited. Try again later."}
 
 
 @app.route("/api/options", methods=["GET"])
