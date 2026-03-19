@@ -86,23 +86,29 @@ def get_stock_info(symbol: str):
     """Fetch stock info for a given symbol"""
     try:
         ticker = yf.Ticker(symbol)
-        info = ticker.info
-
+        # Try to fetch data
+        hist = ticker.history(period="1d")
+        if hist.empty:
+            # Try alternative method
+            info = ticker.info
+            if not info:
+                return {"error": f"Symbol {symbol} not found. Try AAPL, TSLA, NVDA, MSFT"}
+        else:
+            info = ticker.info
+            
         return {
             "symbol": symbol.upper(),
-            "currentPrice": info.get("regularMarketPrice", info.get("currentPrice", 0)),
+            "currentPrice": info.get("regularMarketPrice", info.get("currentPrice", hist['Close'].iloc[-1] if len(hist) > 0 else 0)),
             "change": info.get("regularMarketChange", 0),
             "changePercent": info.get("regularMarketChangePercent", 0),
-            "previousClose": info.get(
-                "regularMarketPreviousClose", info.get("previousClose", 0)
-            ),
+            "previousClose": info.get("regularMarketPreviousClose", info.get("previousClose", 0)),
             "name": info.get("shortName", symbol),
             "marketCap": info.get("marketCap", 0),
             "volume": info.get("regularMarketVolume", 0),
         }
     except Exception as e:
         print(f"Error fetching stock info for {symbol}: {e}")
-        return None
+        return {"error": f"Error: {str(e)}. Try AAPL, TSLA, NVDA, MSFT"}
 
 
 @app.route("/api/options", methods=["GET"])
