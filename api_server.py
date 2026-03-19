@@ -164,6 +164,8 @@ def expirations_endpoint():
 
 
 if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 5000))
     print("Starting Options Scanner API...")
     print("Available endpoints:")
     print("  GET /api/options?symbol=NVDA&type=all - Get stock info and option chain")
@@ -171,5 +173,5 @@ if __name__ == "__main__":
     print("  GET /api/options?symbol=NVDA&type=stock - Get stock info only")
     print("  GET /api/stock?symbol=NVDA - Get stock info")
     print("  GET /api/expirations?symbol=NVDA - Get available expiration dates")
-    print("\nStarting server on http://localhost:5000")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    print(f"\nStarting server on http://0.0.0.0:{port}")
+    app.run(host="0.0.0.0", port=port, debug=False)
