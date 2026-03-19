@@ -1,87 +1,55 @@
 #!/usr/bin/env python3
 """
-Options Scanner API - Python yfinance wrapper
-Run this script to start a local API server with real options data.
-Usage: python api_server.py
+Options Scanner API - Using Finnhub free stock API
 """
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import yfinance as yf
-from datetime import datetime, timedelta
-import json
-
-import time
+import requests
+import os
 
 app = Flask(__name__)
 CORS(app)
 
+# Free Finnhub API key (demo key - limited)
+FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY", "ctq1hr01qt95e8or2q9gctq1hr01qt95e8or2qa0")
+
+
+def get_stock_info(symbol: str):
+    """Fetch stock info using Finnhub"""
+    try:
+        url = f"https://finnhub.io/api/v1/quote?symbol={symbol}&token={FINNHUB_API_KEY}"
+        resp = requests.get(url, timeout=10)
+        data = resp.json()
+        
+        if not data or data.get('c') == 0:
+            return {"error": f"Symbol {symbol} not found. Try AAPL, TSLA, NVDA, MSFT"}
+        
+        return {
+            "symbol": symbol.upper(),
+            "currentPrice": data.get('c', 0),
+            "change": data.get('d', 0),
+            "changePercent": data.get('dp', 0),
+            "previousClose": data.get('pc', 0),
+            "name": symbol,
+            "marketCap": 0,
+            "volume": 0,
+        }
+    except Exception as e:
+        print(f"Error fetching stock info: {e}")
+        return {"error": f"Error: {str(e)}. Try AAPL, TSLA, NVDA"}
+
 
 def get_option_chain(symbol: str, expiration: str = None):
-    """Fetch option chain data for a given symbol"""
-    try:
-        ticker = yf.Ticker(symbol)
-
-        if expiration:
-            expiration_dt = datetime.strptime(expiration, "%Y-%m-%d")
-            expiration_str = expiration_dt.strftime("%Y-%m-%d")
-        else:
-            expirations = ticker.options
-            if not expirations:
-                return None
-            expiration_str = expirations[0]
-
-        options = ticker.option_chain(expiration_str)
-
-        def parse_options(options_df, option_type):
-            if options_df is None or options_df.empty:
-                return []
-
-            result = []
-            for _, row in options_df.iterrows():
-                result.append(
-                    {
-                        "strike": float(row.get("strike", 0)),
-                        "bid": float(row.get("bid", 0)),
-                        "ask": float(row.get("ask", 0)),
-                        "lastPrice": float(row.get("lastPrice", 0))
-                        if pd.notna(row.get("lastPrice"))
-                        else 0,
-                        "volume": int(row.get("volume", 0))
-                        if pd.notna(row.get("volume"))
-                        else 0,
-                        "openInterest": int(row.get("openInterest", 0))
-                        if pd.notna(row.get("openInterest"))
-                        else 0,
-                        "impliedVolatility": float(row.get("impliedVolatility", 0))
-                        if pd.notna(row.get("impliedVolatility"))
-                        else 0,
-                        "inTheMoney": bool(row.get("inTheMoney", False)),
-                        "expiration": expiration_str,
-                        "type": option_type,
-                    }
-                )
-            return result
-
-        import pandas as pd
-
-        calls = parse_options(options.calls, "call")
-        puts = parse_options(options.puts, "put")
-
-        stock = ticker.info
-        current_price = stock.get("regularMarketPrice", stock.get("currentPrice", 0))
-
-        return {
-            "calls": calls,
-            "puts": puts,
-            "underlyingPrice": float(current_price) if current_price else 0,
-            "symbol": symbol.upper(),
-            "expirationDates": list(ticker.options) if ticker.options else [],
-        }
-
-    except Exception as e:
-        print(f"Error fetching option chain for {symbol}: {e}")
-        return None
+    """Fetch option chain - Finnhub free tier doesn't include options, return mock data with message"""
+    return {
+        "calls": [],
+        "puts": [],
+        "underlyingPrice": 0,
+        "symbol": symbol.upper(),
+        "expirationDates": [],
+        "note": "Options data requires paid API. Using stock data only."
+    }
 
 
 def get_stock_info(symbol: str):
