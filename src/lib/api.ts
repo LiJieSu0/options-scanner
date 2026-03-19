@@ -1,12 +1,14 @@
 import { OptionChain, StockInfo, Filters } from "@/types";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://options-scanner-nzj8.onrender.com";
+
 interface ApiResponse {
   stock?: StockInfo;
   options?: OptionChain;
 }
 
 export async function fetchStockData(symbol: string): Promise<ApiResponse> {
-  const response = await fetch(`/api/options?symbol=${symbol}&type=all`);
+  const response = await fetch(`${API_BASE_URL}/api/options?symbol=${symbol}&type=all`);
   if (!response.ok) {
     throw new Error("Failed to fetch stock data");
   }
@@ -14,7 +16,7 @@ export async function fetchStockData(symbol: string): Promise<ApiResponse> {
 }
 
 export async function fetchOptions(symbol: string, expiration?: string): Promise<OptionChain> {
-  let url = `/api/options?symbol=${symbol}&type=options`;
+  let url = `${API_BASE_URL}/api/options?symbol=${symbol}&type=options`;
   if (expiration) {
     url += `&expiration=${expiration}`;
   }
@@ -26,7 +28,7 @@ export async function fetchOptions(symbol: string, expiration?: string): Promise
 }
 
 export async function fetchStockInfo(symbol: string): Promise<StockInfo> {
-  const response = await fetch(`/api/stock?symbol=${symbol}`);
+  const response = await fetch(`${API_BASE_URL}/api/stock?symbol=${symbol}`);
   if (!response.ok) {
     throw new Error("Failed to fetch stock info");
   }
